@@ -718,4 +718,3 @@ config VSERVICES_VTTY_COUNT
 	help
 	  The maximum number of Virtual Services serial devices to support.
 	  This limit applies to both the client and server.
-

@@ -34,11 +34,12 @@
 #include <linux/poll.h>
 #include <linux/reservation.h>
 #include <linux/mm.h>
+#include <linux/mount.h>
 #include <linux/sched/signal.h>
 #include <linux/fdtable.h>
 #include <linux/list_sort.h>
 #include <linux/hashtable.h>
-#include <linux/mount.h>
+#include <linux/dcache.h>
 
 #include <uapi/linux/dma-buf.h>
 #include <uapi/linux/magic.h>
@@ -87,6 +88,9 @@ static void dma_buf_release(struct dentry *dentry)
 
 	dmabuf = dentry->d_fsdata;
 
+	spin_lock(&dentry->d_lock);
+	dentry->d_fsdata = NULL;
+	spin_unlock(&dentry->d_lock);
 	BUG_ON(dmabuf->vmapping_counter);
 
 	/*
@@ -101,12 +105,13 @@ static void dma_buf_release(struct dentry *dentry)
 
 	dmabuf->ops->release(dmabuf);
 
+	dma_buf_ref_destroy(dmabuf);
+
 	if (dmabuf->resv == (struct reservation_object *)&dmabuf[1])
 		reservation_object_fini(dmabuf->resv);
 
 	module_put(dmabuf->owner);
-	kfree(dmabuf->name);
-	kfree(dmabuf);
+	dmabuf_dent_put(dmabuf);
 }
 
 static int dma_buf_file_release(struct inode *inode, struct file *file)
@@ -385,6 +390,21 @@ out_unlock:
 	return ret;
 }
 
+static long dma_buf_get_name(struct dma_buf *dmabuf, char __user *buf)
+{
+	const char *name = "";
+	long ret = 0;
+
+	mutex_lock(&dmabuf->lock);
+	if (dmabuf->name)
+		name = dmabuf->name;
+	if (copy_to_user(buf, name, strlen(name) + 1))
+		ret = -EFAULT;
+	mutex_unlock(&dmabuf->lock);
+
+	return ret;
+}
+
 static long dma_buf_ioctl(struct file *file,
 			  unsigned int cmd, unsigned long arg)
 {
@@ -435,6 +455,9 @@ static long dma_buf_ioctl(struct file *file,
 	case DMA_BUF_SET_NAME_A:
 	case DMA_BUF_SET_NAME_B:
 		return dma_buf_set_name(dmabuf, (const char __user *)arg);
+
+	case DMA_BUF_GET_NAME:
+		return dma_buf_get_name(dmabuf, (char __user *)arg);
 
 	default:
 		return -ENOTTY;
@@ -589,7 +612,11 @@ struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
 	if (!try_module_get(exp_info->owner))
 		return ERR_PTR(-ENOENT);
 
-
+	/*
+	 * dma_buf struct must be allocated with kzalloc to zero out all the
+	 * fields. Otherwise dmabuf->name field may leak kernel data when the
+	 * name is unspecified.
+	 */
 	dmabuf = kzalloc(alloc_size, GFP_KERNEL);
 	if (!dmabuf) {
 		ret = -ENOMEM;
@@ -620,8 +647,6 @@ struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
 		ret = PTR_ERR(file);
 		goto err_dmabuf;
 	}
-
-	file->f_mode |= FMODE_LSEEK;
 	dmabuf->file = file;
 
 	mutex_init(&dmabuf->lock);

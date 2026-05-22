@@ -110,7 +110,6 @@ static u32 pps_config_sub_second_increment(void __iomem *ioaddr,
 
 	if (sns_inc > PTP_SSIR_SNSINC_MAX)
 		sns_inc = PTP_SSIR_SNSINC_MAX;
-
 	reg_value2 = sns_inc;
 	if (gmac4)
 		reg_value2 <<= GMAC4_PTP_SSIR_SNSINC_SHIFT;

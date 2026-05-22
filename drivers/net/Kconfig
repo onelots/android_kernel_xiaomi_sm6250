@@ -78,6 +78,8 @@ config WIREGUARD
 	select DST_CACHE
 	select CRYPTO
 	select CRYPTO_ALGAPI
+	select ARM_CRYPTO if ARM
+	select ARM64_CRYPTO if ARM64
 	select VFP
 	select VFPv3 if CPU_V7
 	select NEON if CPU_V7

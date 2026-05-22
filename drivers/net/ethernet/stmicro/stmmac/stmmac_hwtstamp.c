@@ -59,7 +59,10 @@ static u32 stmmac_config_sub_second_increment(void __iomem *ioaddr,
 
 	if (ss_inc > PTP_SSIR_SSINC_MAX)
 		ss_inc = PTP_SSIR_SSINC_MAX;
+<<<<<<< HEAD
 
+=======
+>>>>>>> qcom/HEAD
 	if (sns_inc > PTP_SSIR_SNSINC_MAX)
 		sns_inc = PTP_SSIR_SNSINC_MAX;
 

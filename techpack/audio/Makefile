@@ -3,10 +3,10 @@ ifneq ($(CONFIG_ARCH_ATOLL), y)
 ifeq ($(CONFIG_ARCH_SDM845), y)
 include $(srctree)/techpack/audio/config/sdm845auto.conf
 export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/sdm845auto.conf)
+endif
 ifeq ($(CONFIG_ARCH_SDM660), y)
 include $(srctree)/techpack/audio/config/sdm660auto_static.conf
 export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/sdm660auto_static.conf)
-endif
 endif
 ifeq ($(CONFIG_ARCH_SDM670), y)
 include $(srctree)/techpack/audio/config/sdm670auto_static.conf
@@ -32,6 +32,13 @@ ifeq ($(CONFIG_ARCH_SDMSHRIKE), y)
 include $(srctree)/techpack/audio/config/sm8150auto.conf
 export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/sm8150auto.conf)
 endif
+<<<<<<< HEAD
+=======
+ifeq ($(CONFIG_ARCH_TRINKET), y)
+include $(srctree)/techpack/audio/config/trinketauto.conf
+export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/trinketauto.conf)
+endif
+>>>>>>> qcom/HEAD
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE     += \
@@ -74,6 +81,10 @@ endif
 ifeq ($(CONFIG_ARCH_SDMSHRIKE), y)
 LINUXINCLUDE    += \
                 -include $(srctree)/techpack/audio/config/sm8150autoconf.h
+endif
+ifeq ($(CONFIG_ARCH_TRINKET), y)
+LINUXINCLUDE    += \
+                -include $(srctree)/techpack/audio/config/trinketautoconf.h
 endif
 
 obj-y += soc/
